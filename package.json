@@ -1,0 +1,64 @@
+{
+  "name": "cab-searching",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.ts",
+  "scripts": {
+    "start": "set NODE_ENV=production & node dist/app.js",
+    "dev": "NODE_ENV=development tsc -w & NODE_ENV=development nodemon dist/app.js",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crud-engr/cab-searching.git"
+  },
+  "author": "Abeeb Ayinla",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/crud-engr/cab-searching/issues"
+  },
+  "homepage": "https://github.com/crud-engr/cab-searching#readme",
+  "devDependencies": {
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@sentry/node": "^6.19.7",
+    "@sentry/tracing": "^6.19.7",
+    "@types/bcrypt": "^5.0.0",
+    "@types/compression": "^1.7.2",
+    "@types/config": "^0.0.41",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/express-mongo-sanitize": "^2.1.0",
+    "@types/express-rate-limit": "^6.0.0",
+    "@types/helmet": "^4.0.0",
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/moment": "^2.13.0",
+    "@types/mongoose": "^5.11.97",
+    "@types/morgan": "^1.9.3",
+    "@types/node": "^17.0.30",
+    "api": "^4.4.0",
+    "axios": "^0.27.2",
+    "bcrypt": "^5.0.1",
+    "compression": "^1.7.4",
+    "config": "^3.3.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "errorhandler": "^1.5.1",
+    "express": "^4.18.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^6.4.0",
+    "helmet": "^5.0.2",
+    "joi": "^17.6.0",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.3",
+    "mongoose": "^6.3.1",
+    "morgan": "^1.10.0",
+    "node-fetch": "^3.2.4",
+    "ts-node": "^10.7.0",
+    "xss-clean": "^0.1.1"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
