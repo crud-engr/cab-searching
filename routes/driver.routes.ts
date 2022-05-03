@@ -12,8 +12,9 @@ router
 
 router
   .route('/:id/locations')
-  .post([], new DriverController().saveDriversLocation);
-
-// api/drivers/:id/locations
+  .post(
+    [new DriverValidation().validateDriverLocation],
+    new DriverController().saveDriversLocation
+  );
 
 export default router;
