@@ -7,6 +7,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import morgan from 'morgan';
 import driverRoutes from './routes/driver.routes';
+import cabRoutes from './routes/cab.routes';
 import config from 'config';
 import connectDB from './config/db';
 require('dotenv').config();
@@ -49,6 +50,7 @@ app.use(xss());
 
 // routes config
 app.use('/api/drivers', driverRoutes);
+app.use('/api/cabs', cabRoutes);
 
 app.use((req: any, res: any, next: any) => {
   return res.status(404).json({
