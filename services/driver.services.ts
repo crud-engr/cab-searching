@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import moment from 'moment';
+import crypto from 'crypto';
 import Verification from '../models/Verification.models';
 import Driver from '../models/Driver.models';
-import sendMail from '../config/mail';
-import config from 'config';
-import axios from 'axios';
 import DriverLocation from '../models/DriverLocation.models';
+import { sendEmail } from '../config/mail';
 
 export default class DriverService {
   generateToken() {
@@ -22,6 +21,12 @@ export default class DriverService {
       const phoneExists = await Driver.findOne({
         phone_number,
       }).exec();
+      const licenseExists = await Driver.findOne({
+        license_number,
+      }).exec();
+      const carExists = await Driver.findOne({
+        car_number,
+      }).exec();
       if (emailExists) {
         return res.status(400).json({
           status: 'failure',
@@ -34,7 +39,18 @@ export default class DriverService {
           reason: 'Driver phone already exists',
         });
       }
-
+      if (licenseExists) {
+        return res.status(400).json({
+          status: 'failure',
+          reason: 'license number already exists',
+        });
+      }
+      if (carExists) {
+        return res.status(400).json({
+          status: 'failure',
+          reason: 'car number already exists',
+        });
+      }
       const input = {
         name,
         email,
@@ -50,83 +66,28 @@ export default class DriverService {
         expiry: moment().add(5, 'minutes'),
       });
 
+      const message = `Hi ${driver.name.split(' ')[0]}.
+      Welcome to Chekkit. We are happy to have you here.
+      Please use the below code to activate your account.
+      ${verificationToken}`;
+
       // send token to mail
-      const mailUri: string = config.get('MAIL_URI');
-      const fromEmail: string = config.get('MAIL_FROM');
-      const fromName: string = config.get('MAIL_FROM_NAME');
-      const key: string = config.get('SENDCHAMP_API_KEY');
-      const headers = {
-        Accept: 'application/json',
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      };
-
-      // let data = {
-      //   subject: 'Confirm Account',
-      //   to: {
-      //     email: `${driver.email}`,
-      //     name: `${driver.name}`,
-      //   },
-      //   from: {
-      //     email: fromEmail,
-      //     name: fromName,
-      //   },
-      //   message_body: {
-      //     type: 'validation',
-      //     value: `Please confirm your account with this OTP: ${verificationToken}`,
-      //   },
-      // };
-
-      const sdk = require('api')('@sendchamp/v1.0#1ltax11ol1xgp1ca');
-
-      sdk['send-email'](
-        {
-          to: [
-            {
-              email: 'abeebayinla@gmail.com',
-              name: 'Abeeb Ayinla',
-            },
-          ],
-          from: {
-            email: 'career@chekkit.io',
-            name: 'chekkit',
-          },
-          message_body: {
-            type: 'text/html',
-            value: 'Please confirm your account with this OTP: 1996',
-          },
-          subject: 'Verifiy Account',
-        },
-        {
-          Authorization:
-            'Bearer sendchamp_live_$2y$10$PYkBF0brwp4b5Y7zjiJDruaxTBav9Obq2/DU18MVViXFRy63aHfhO',
-        }
-      )
-        .then((res: any) => console.log(res))
-        .catch((err: any) => console.error(err));
-
-      // const sentMail = await sendMail(
-      //   'Confirm Account',
-      //   {
-      //     `${driver.email}`, `${driver.name}`
-      //   },
-      //   `Please confirm your account with this OTP: ${verificationToken}`
-      // );
+      await sendEmail({
+        email: driver.email,
+        subject: 'Activate Your Account',
+        message,
+      });
 
       return res.status(201).json({
-        status: 'success',
-        message: 'Please check your email and verify your account',
-        data: {
-          id: driver._id,
-          name: driver.name,
-          email: driver.email,
-          phone_number: driver.phone_number,
-          license_number: driver.license_number,
-          car_number: driver.car_number,
-        },
+        id: driver._id,
+        name: driver.name,
+        email: driver.email,
+        phone_number: driver.phone_number,
+        license_number: driver.license_number,
+        car_number: driver.car_number,
       });
     } catch (err) {
-      console.log(err);
+      console.log(err.message);
       return res.status(500).json({
         status: 'failure',
         reason: `something went wrong`,
@@ -137,6 +98,14 @@ export default class DriverService {
   async activateAccount(req: Request, res: Response) {
     try {
       const { token } = req.body;
+      const { id } = req.params;
+      const driver = await Driver.findOne({ _id: id }).exec();
+      if (!driver) {
+        return res.status(404).json({
+          status: 'failure',
+          reason: 'Driver not found!',
+        });
+      }
       if (!token) {
         return res.status(400).json({
           status: 'failure',
@@ -144,7 +113,58 @@ export default class DriverService {
         });
       }
       // check if token still valid and not expired.
-    } catch (err) {}
+      const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+      const verify = await Verification.findOne({
+        user: driver._id,
+        token: hashedToken,
+        expiry: { $gt: moment().format() },
+        isVerified: false,
+      }).exec();
+
+      if (!verify || verify === null) {
+        return res.status(404).json({
+          status: 'failure',
+          reason: 'Invalid or expired token!',
+        });
+      }
+
+      // if token not expired
+      await Driver.findOneAndUpdate(
+        {
+          _id: id,
+          isVerified: false,
+        },
+        {
+          _id: id,
+          isVerified: true,
+        }
+      );
+
+      await Verification.findOneAndUpdate(
+        {
+          user: verify.user,
+          expiry: { $gt: moment().format() },
+          isUsed: false,
+        },
+        {
+          user: verify.user,
+          isUsed: true,
+        }
+      );
+      return res.status(200).json({
+        message: 'Account verified',
+      });
+    } catch (err) {
+      console.log(err.message);
+      return res.status(500).json({
+        status: 'failure',
+        reason: `something went wrong`,
+      });
+    }
   }
 
   async saveDriversLocation(req: Request, res: Response) {
@@ -155,17 +175,18 @@ export default class DriverService {
       const { latitude, longitude } = req.body;
       const driver = await Driver.findOne({ id }).exec();
       if (!driver) {
-        return res.status(400).json({
+        return res.status(404).json({
           status: 'failure',
-          reason: 'driver not found',
+          reason: 'Driver not found',
         });
       }
       // save location
-      await DriverLocation.create({ latitude, longitude });
-      return res.status(200).json({
+      await DriverLocation.create({ user: id, latitude, longitude });
+      return res.status(201).json({
         status: 'success',
       });
     } catch (err) {
+      console.log(err.message);
       return res.status(500).json({
         status: 'failure',
         reason: 'something went wrong.',
