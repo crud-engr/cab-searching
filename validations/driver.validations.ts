@@ -48,7 +48,11 @@ export default class DriverValidation {
     }
   }
 
-  async validateDriverLocation(req: Request, res: Response, next: NextFunction) {
+  async validateDriverLocation(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     const schema = Joi.object({
       latitude: Joi.number().required().messages({
         'number.required': 'latitude is required',
@@ -58,6 +62,33 @@ export default class DriverValidation {
       longitude: Joi.number().required().messages({
         'number.required': 'longitude is required',
         'number.empty': 'longitude cannot be empty',
+      }),
+    }).options({ abortEarly: true });
+
+    try {
+      const value = await schema.validateAsync(req.body);
+      next();
+    } catch (err) {
+      let errMessage = err.details[0].message.split(' ');
+      let [field, ...others] = errMessage;
+      field = field.replace(/['"]+/g, '');
+      let newErrorMessage = `${field} ${others.join(' ')}`;
+      return res.status(422).json({
+        status: 'failure',
+        reason: newErrorMessage,
+      });
+    }
+  }
+
+  async validateActivateAccount(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    const schema = Joi.object({
+      token: Joi.string().required().messages({
+        'string.required': 'token is required',
+        'string.empty': 'token should not be empty',
       }),
     }).options({ abortEarly: true });
 
