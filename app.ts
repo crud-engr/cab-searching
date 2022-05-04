@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
@@ -7,19 +7,18 @@ import mongoSanitize from 'express-mongo-sanitize';
 import compression from 'compression';
 import morgan from 'morgan';
 import driverRoutes from './routes/driver.routes';
+import indexRoutes from './routes/index.routes';
 import cabRoutes from './routes/cab.routes';
 import config from 'config';
 import connectDB from './config/db';
 require('dotenv').config();
 
 // start express app
-const app = express();
-
+const app: any = express();
 app.use(cors());
-app.set('view engine', 'pug');
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', [
     'GET',
@@ -49,15 +48,9 @@ app.use(mongoSanitize());
 app.use(xss());
 
 // routes config
+app.use('/', indexRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/cabs', cabRoutes);
-
-app.use((req: any, res: any, next: any) => {
-  return res.status(404).json({
-    status: 'error',
-    message: `Could not find the requested resource ${req.originalUrl} on the server!`,
-  });
-});
 
 const port: number = config.get('PORT');
 const host: string = config.get('HOST');
@@ -67,8 +60,10 @@ if (require.main === module) {
   app.listen(port, () =>
     console.log(`server running at http://${host}:${port}`)
   );
+
   // connect to db
   connectDB();
+
 } else {
   module.exports = app;
 }
