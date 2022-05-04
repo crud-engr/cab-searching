@@ -11,6 +11,13 @@ router
   );
 
 router
+  .route('/:id/activate-account')
+  .post(
+    [new DriverValidation().validateActivateAccount],
+    new DriverController().activateAccount
+  );
+
+router
   .route('/:id/locations')
   .post(
     [new DriverValidation().validateDriverLocation],
