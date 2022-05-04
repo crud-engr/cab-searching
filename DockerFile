@@ -1,5 +1,5 @@
 FROM node:16
-WORKDIR /home/app
+WORKDIR /
 COPY --chown=node:node package*.json ./
 COPY --chown=node:node tsconfig*.json ./
 USER node
