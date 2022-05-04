@@ -11,9 +11,17 @@ router
   );
 
 router
-  .route('/:id/locations')
-  .post([], new DriverController().saveDriversLocation);
+  .route('/:id/activate-account')
+  .post(
+    [new DriverValidation().validateActivateAccount],
+    new DriverController().activateAccount
+  );
 
-// api/drivers/:id/locations
+router
+  .route('/:id/locations')
+  .post(
+    [new DriverValidation().validateDriverLocation],
+    new DriverController().saveDriversLocation
+  );
 
 export default router;

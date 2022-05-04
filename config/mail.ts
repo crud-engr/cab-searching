@@ -1,42 +1,29 @@
+import nodemailer from 'nodemailer';
 import config from 'config';
-import axios from 'axios';
 
-const mailUri: string = config.get('MAIL_URI');
-const fromEmail: string = config.get('MAIL_FROM');
-const fromName: string = config.get('MAIL_FROM_NAME');
-const key: string = config.get('SENDCHAMP_API_KEY');
-const headers = {
-  Accept: 'application/json',
-  Authorization: `Bearer ${key}`,
-  'Content-Type': 'application/json',
-};
+const mail_from: string = config.get('MAIL_FROM');
+const mail_host: string = config.get('MAIL_HOST');
+const mail_port: number = parseInt(config.get('MAIL_PORT'));
+const mail_username: string = config.get('MAIL_USERNAME');
+const mail_password: string = config.get('MAIL_PASSWORD');
 
-const sendMail = async (subject: any, to: any, message_body: any) => {
-  let data = {
-    subject,
-    to: {
-      email: to.email,
-      name: to.name,
+export const sendEmail = async (options: any) => {
+  const transporter = nodemailer.createTransport({
+    host: mail_host,
+    port: mail_port,
+    secure: false,
+    auth: {
+      user: mail_username,
+      pass: mail_password,
     },
-    from: {
-      email: fromEmail,
-      name: fromName,
-    },
-    message_body: {
-      type: 'validation',
-      value: message_body,
-    },
+  });
+
+  const mailOptions = {
+    from: `Chekkit <${mail_from}>`,
+    to: options.email,
+    subject: options.subject,
+    text: options.message,
   };
-  try {
-    const response = await axios(mailUri, {
-      method: 'POST',
-      data,
-      headers,
-    });
-    console.log(response);
-  } catch (err) {
-    console.log(err.message);
-  }
-};
 
-export default sendMail;
+  await transporter.sendMail(mailOptions);
+};

@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import IVerification from '../interfaces/IVerification.interface';
+import crypto from 'crypto';
+import moment from 'moment';
 
 const VerificationSchema = new mongoose.Schema(
   {
@@ -13,8 +15,8 @@ const VerificationSchema = new mongoose.Schema(
       required: true,
     },
     expiry: {
-        type: Date,
-        required: true
+      type: Date,
+      required: true,
     },
     isUsed: {
       type: Boolean,
@@ -25,6 +27,12 @@ const VerificationSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+VerificationSchema.pre<IVerification>('save', function (next:any) {
+  this.token = crypto.createHash('sha256').update(this.token).digest('hex');
+  this.expiry = moment().add(5, 'minutes').toDate()
+  next();
+});
 
 export default mongoose.model<IVerification>(
   'Verification',
